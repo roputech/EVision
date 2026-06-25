@@ -11,7 +11,6 @@ st.set_page_config(page_title="EVision Premium", page_icon="🎯", layout="wide"
 # --- CSS PREMIUM E BARRAS DE PRESSÃO ---
 st.markdown("""
     <style>
-    /* Cartão Neutro (Monitoramento - Sem Alerta) */
     .ev-card-monitor {
         background-color: #1a1a1a;
         border-left: 5px solid #444;
@@ -19,7 +18,6 @@ st.markdown("""
         color: #888;
     }
     
-    /* Cartão Destaque (Alerta +EV) com efeito de pulso */
     .ev-card-alerta {
         background-color: #121212;
         border-left: 5px solid #00ff88;
@@ -43,11 +41,9 @@ st.markdown("""
     .ev-minuto { color: #ff4b4b; font-weight: bold; font-size: 1.2rem; }
     .ev-destaque { color: #00ff88; font-size: 2rem; font-weight: 900; }
     
-    /* Design do Termômetro */
     .barra-fundo { background-color: #333; border-radius: 5px; width: 100%; height: 12px; margin-top: 8px; }
     .barra-pressao { height: 12px; border-radius: 5px; transition: width 0.5s ease-in-out; }
     
-    /* Botão da Casa de Apostas */
     .btn-apostar {
         background-color: #00ff88;
         color: #000 !important;
@@ -84,6 +80,17 @@ if st.sidebar.button("🎯 Forçar Varredura Agora", use_container_width=True):
     db.reference('sistema/controle/forcar_varredura').set(True)
     st.sidebar.success("Comando enviado ao motor de fundo!")
 
+# --- O NOVO INDICADOR DE RASTREAMENTO DO SATÉLITE ---
+st.sidebar.markdown("---")
+st.sidebar.markdown("### 🛰️ Satélite: Captura Bruta")
+jogos_rastreados = db.reference('sistema/jogos_detectados').get()
+
+if jogos_rastreados:
+    for jogo_nome in jogos_rastreados:
+        st.sidebar.caption(f"🟢 {jogo_nome}")
+else:
+    st.sidebar.caption("⏳ Aguardando leitura do motor...")
+
 # --- CABEÇALHO PRINCIPAL ---
 st.title("🎯 EVision: Terminal Quantitativo")
 st.markdown("**Copa do Mundo 2026** | Motor de Momentum Multivariável Ativo")
@@ -96,10 +103,8 @@ while True:
         jogos_vivo = db.reference('alertas_ao_vivo').get()
 
         if jogos_vivo:
-            # Ordena para os ALERTAS (+EV altos) ficarem sempre no topo
             jogos_ordenados = sorted(jogos_vivo, key=lambda x: x.get('vantagem_porcentagem', 0), reverse=True)
-            
-            st.write(f"### 📡 {len(jogos_ordenados)} Jogo(s) no Radar da FIFA")
+            st.write(f"### 📡 {len(jogos_ordenados)} Jogo(s) com Vantagem no Radar")
             
             for jogo in jogos_ordenados:
                 partida = jogo.get('partida', 'Desconhecido')
@@ -113,16 +118,12 @@ while True:
                 p_casa = jogo.get('probabilidade_casa', 0)
                 link_casa = jogo.get('link_casa', 'https://www.bet365.com')
                 
-                # --- LÓGICA DE DESTAQUE ---
-                # Se o EV for maior que 5.0%, vira Alerta com Botão. Senão, fica neutro.
                 is_alerta = v_ev > 5.0
-                
                 classe_css = "ev-card-alerta" if is_alerta else "ev-card-monitor"
                 cor_barra = "#00ff88" if is_alerta else "#ffb703"
                 texto_ev = f"+{v_ev}%" if v_ev > 0 else f"{v_ev}%"
                 preenchimento_barra = min((v_ev / 15.0) * 100, 100) if v_ev > 0 else 0
                 
-                # O botão só é renderizado no HTML se for um alerta
                 botao_html = f'<a href="{link_casa}" target="_blank" class="btn-apostar">🎯 Abrir {casa}</a>' if is_alerta else ''
 
                 html_card = f"""
