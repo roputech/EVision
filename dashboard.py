@@ -2,6 +2,8 @@ import streamlit as st
 import firebase_admin
 from firebase_admin import credentials, db
 import time
+import json
+import os
 
 # --- CONFIGURAÇÃO DA TELA ---
 st.set_page_config(page_title="EVision Premium", page_icon="🎯", layout="wide")
@@ -36,7 +38,13 @@ st.markdown("""
 FIREBASE_URL = 'https://evision-5dafd-default-rtdb.firebaseio.com/'
 
 if not firebase_admin._apps:
-    cred = credentials.Certificate("firebase-key.json")
+    # Tenta usar a chave local (seu PC). Se não achar, puxa do cofre da nuvem.
+    if os.path.exists("firebase-key.json"):
+        cred = credentials.Certificate("firebase-key.json")
+    else:
+        chave_nuvem = json.loads(st.secrets["FIREBASE_JSON"])
+        cred = credentials.Certificate(chave_nuvem)
+        
     firebase_admin.initialize_app(cred, {'databaseURL': FIREBASE_URL})
 
 # --- MENU LATERAL (SIDEBAR) ---
