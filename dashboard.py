@@ -43,6 +43,11 @@ if not firebase_admin._apps:
         cred = credentials.Certificate("firebase-key.json")
     else:
         chave_nuvem = json.loads(st.secrets["FIREBASE_JSON"])
+        
+        # --- A LINHA MÁGICA DE CORREÇÃO ---
+        # Força o sistema a transformar o texto "\n" em quebras de linha reais
+        chave_nuvem["private_key"] = chave_nuvem["private_key"].replace('\\n', '\n')
+        
         cred = credentials.Certificate(chave_nuvem)
         
     firebase_admin.initialize_app(cred, {'databaseURL': FIREBASE_URL})
