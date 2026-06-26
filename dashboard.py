@@ -8,16 +8,10 @@ import os
 # --- CONFIGURAÇÃO DA TELA ---
 st.set_page_config(page_title="EVision Premium", page_icon="🎯", layout="wide")
 
-# --- CSS PREMIUM E BARRAS DE PRESSÃO ---
+# --- CSS PREMIUM E CARTÕES ---
 st.markdown("""
     <style>
-    .ev-card-monitor {
-        background-color: #1a1a1a;
-        border-left: 5px solid #444;
-        border-radius: 10px; padding: 20px; margin-bottom: 20px;
-        color: #888;
-    }
-    
+    /* Estilo para Alertas Ativos (+EV) */
     .ev-card-alerta {
         background-color: #121212;
         border-left: 5px solid #00ff88;
@@ -54,9 +48,17 @@ st.markdown("""
         display: inline-block;
         margin-top: 10px;
         transition: 0.3s;
-        text-align: center;
     }
     .btn-apostar:hover { background-color: #00cc6a; box-shadow: 0 0 10px #00ff88; }
+    
+    /* Grid de Monitoramento */
+    .grid-jogo {
+        background-color: #1a1a1a;
+        padding: 12px;
+        margin-bottom: 8px;
+        border-radius: 6px;
+        font-size: 0.95rem;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -80,33 +82,28 @@ if st.sidebar.button("🎯 Forçar Varredura Agora", use_container_width=True):
     db.reference('sistema/controle/forcar_varredura').set(True)
     st.sidebar.success("Comando enviado ao motor de fundo!")
 
-# --- O NOVO INDICADOR DE RASTREAMENTO DO SATÉLITE ---
-st.sidebar.markdown("---")
-st.sidebar.markdown("### 🛰️ Satélite: Captura Bruta")
-jogos_rastreados = db.reference('sistema/jogos_detectados').get()
-
-if jogos_rastreados:
-    for jogo_nome in jogos_rastreados:
-        st.sidebar.caption(f"🟢 {jogo_nome}")
-else:
-    st.sidebar.caption("⏳ Aguardando leitura do motor...")
-
 # --- CABEÇALHO PRINCIPAL ---
 st.title("🎯 EVision: Terminal Quantitativo")
-st.markdown("**Copa do Mundo 2026** | Motor de Momentum Multivariável Ativo")
+st.markdown("**Copa do Mundo 2026** | Sistema de Redundância Multi-API Ativo")
+st.markdown("---")
 
 placeholder = st.empty()
 
 # --- LOOP VISUAL ---
 while True:
     with placeholder.container():
+        
+        # ==========================================
+        # SEÇÃO 1: ALERTAS MATEMÁTICOS ATIVOS (+EV)
+        # ==========================================
         jogos_vivo = db.reference('alertas_ao_vivo').get()
-
-        if jogos_vivo:
-            jogos_ordenados = sorted(jogos_vivo, key=lambda x: x.get('vantagem_porcentagem', 0), reverse=True)
-            st.write(f"### 📡 {len(jogos_ordenados)} Jogo(s) com Vantagem no Radar")
-            
-            for jogo in jogos_ordenados:
+        
+        # Filtramos para exibir na zona de destaque apenas oportunidades reais de valor (> 5%)
+        alertas_reais = [j for j in jogos_vivo if j.get('vantagem_porcentagem', 0) > 5.0] if jogos_vivo else []
+        
+        if alertas_reais:
+            st.write("### 🚨 Oportunidades +EV Detectadas")
+            for jogo in alertas_reais:
                 partida = jogo.get('partida', 'Desconhecido')
                 placar = jogo.get('placar', '0x0')
                 minuto = jogo.get('minuto', '0')
@@ -118,16 +115,10 @@ while True:
                 p_casa = jogo.get('probabilidade_casa', 0)
                 link_casa = jogo.get('link_casa', 'https://www.bet365.com')
                 
-                is_alerta = v_ev > 5.0
-                classe_css = "ev-card-alerta" if is_alerta else "ev-card-monitor"
-                cor_barra = "#00ff88" if is_alerta else "#ffb703"
-                texto_ev = f"+{v_ev}%" if v_ev > 0 else f"{v_ev}%"
                 preenchimento_barra = min((v_ev / 15.0) * 100, 100) if v_ev > 0 else 0
-                
-                botao_html = f'<a href="{link_casa}" target="_blank" class="btn-apostar">🎯 Abrir {casa}</a>' if is_alerta else ''
 
                 html_card = f"""
-<div class="{classe_css}">
+<div class="ev-card-alerta">
     <div class="ev-header">
         <p class="ev-title">⚽ {partida} <span style="color:#888;">| Placar: {placar}</span></p>
         <p class="ev-minuto">⏱️ {minuto}' min</p>
@@ -137,17 +128,17 @@ while True:
             <p style="margin: 0; color: #aaa;">Entrada Tática (+EV):</p>
             <p class="ev-title" style="color: #fff;">{selecao} @ {odd}</p>
             <p style="margin: 5px 0 0 0; color: #888;">🏦 Operar na: <strong>{casa}</strong></p>
-            {botao_html}
+            <a href="{link_casa}" target="_blank" class="btn-apostar">🎯 Abrir {casa}</a>
         </div>
         <div style="flex: 1; padding: 0 20px;">
             <p style="margin: 0; color: #aaa; text-align: center;">Termômetro de Pressão (IPM)</p>
             <div class="barra-fundo">
-                <div class="barra-pressao" style="width: {preenchimento_barra}%; background-color: {cor_barra};"></div>
+                <div class="barra-pressao" style="width: {preenchimento_barra}%; background-color: #00ff88;"></div>
             </div>
         </div>
         <div style="flex: 1; text-align: right;">
             <p style="margin: 0; color: #aaa;">Vantagem Matemática</p>
-            <p class="ev-destaque" style="color: {cor_barra};">{texto_ev}</p>
+            <p class="ev-destaque">+{v_ev}%</p>
             <p style="margin: 5px 0 0 0; font-size: 0.85rem; color: #666;">Linha Justa: {p_real}% | Linha da Casa: {p_casa}%</p>
         </div>
     </div>
@@ -155,7 +146,43 @@ while True:
 """
                 st.markdown(html_card, unsafe_allow_html=True)
         else:
-            st.info("📡 Escaneando satélites da FIFA... O algoritmo está a analisar escanteios, cartões e pressão.")
+            # Em vez do aviso azul gigante, uma barra limpa e discreta indicando escaneamento normal
+            st.markdown("<div style='background-color: #111; border: 1px solid #222; padding: 15px; border-radius: 8px; text-align: center; color: #666; font-size: 0.95rem;'>📡 Varredura em tempo real ativa. Monitorando oscilações de mercado e estatísticas de campo...</div>", unsafe_allow_html=True)
+        
+        st.markdown("<br>", unsafe_allow_html=True)
+        
+        # ==========================================
+        # SEÇÃO 2: RADAR DE MONITORAMENTO DO DIA
+        # ==========================================
+        st.write("### 🛰️ Grade de Cobertura do Satélite (Jogos do Dia)")
+        jogos_brutos = db.reference('sistema/jogos_detectados').get()
+        
+        if jogos_brutos:
+            # Dividimos a tela principal em 3 colunas organizadas
+            col1, col2, col3 = st.columns(3)
+            
+            with col1:
+                st.markdown("<h4 style='color: #00ff88; margin-bottom: 12px;'>🔥 EM ANDAMENTO</h4>", unsafe_allow_html=True)
+                for jogo in jogos_brutos:
+                    if "🔥 AO VIVO:" in jogo:
+                        limpo = jogo.replace("🔥 AO VIVO:", "").strip()
+                        st.markdown(f"<div class='grid-jogo' style='border-left: 3px solid #00ff88; color: #fff;'>{limpo}</div>", unsafe_allow_html=True)
+            
+            with col2:
+                st.markdown("<h4 style='color: #ffb703; margin-bottom: 12px;'>⏳ AGENDADOS</h4>", unsafe_allow_html=True)
+                for jogo in jogos_brutos:
+                    if "⏳ AGENDADO:" in jogo:
+                        limpo = jogo.replace("⏳ AGENDADO:", "").strip()
+                        st.markdown(f"<div class='grid-jogo' style='border-left: 3px solid #ffb703; color: #aaa;'>{limpo}</div>", unsafe_allow_html=True)
+                        
+            with col3:
+                st.markdown("<h4 style='color: #666; margin-bottom: 12px;'>✅ ENCERRADOS</h4>", unsafe_allow_html=True)
+                for jogo in jogos_brutos:
+                    if "✅ FIM:" in jogo:
+                        limpo = jogo.replace("✅ FIM:", "").strip()
+                        st.markdown(f"<div class='grid-jogo' style='border-left: 3px solid #444; color: #666;'>{limpo}</div>", unsafe_allow_html=True)
+        else:
+            st.caption("Aguardando o disparo da primeira varredura do motor local para mapear a grade...")
 
     time.sleep(10)
     st.rerun()
